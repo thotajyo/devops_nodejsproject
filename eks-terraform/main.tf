@@ -114,16 +114,19 @@ provider "aws" {
   }
 }
 
-# Data source for VPC
+
 data "aws_vpc" "vpc" {
   filter {
     name   = "tag:Name"
-    values = ["vpc"]  # Ensure this tag is unique enough to avoid multiple VPC matches
+    values = ["vpc"]  # Ensure this tag is unique
   }
   filter {
     name   = "cidr-block"
-    values = ["10.0.0.0/16"]  # Ensure the CIDR block matches exactly your VPC's CIDR
+    values = ["10.0.0.0/16"]  # Ensure this CIDR block matches exactly your VPC's CIDR
   }
+
+  # Optionally add `count` to ensure only one VPC is matched
+  count = length(data.aws_vpc.vpc.*.id)
 }
 
 # Data sources for subnets
