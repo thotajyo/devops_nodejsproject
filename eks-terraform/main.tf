@@ -114,13 +114,19 @@ provider "aws" {
   }
 }
 
- # data source 
- data "aws_vpc" "vpc" {
-  tags = {
-    Name = "vpc"  # Specify the name of your existing VPC
+# Data source for VPC
+data "aws_vpc" "vpc" {
+  filter {
+    name   = "tag:Name"
+    values = ["vpc"]  # Ensure this tag is unique enough to avoid multiple VPC matches
+  }
+  filter {
+    name   = "cidr-block"
+    values = ["10.0.0.0/16"]  # Ensure the CIDR block matches exactly your VPC's CIDR
   }
 }
 
+# Data sources for subnets
 data "aws_subnet" "public-subnet-01" {
   filter {
     name   = "tag:Name"
@@ -137,66 +143,74 @@ data "aws_subnet" "public-subnet-02" {
   vpc_id = data.aws_vpc.vpc.id
 }
 
+# Data source for security group
 data "aws_security_group" "cicd_sg" {
   vpc_id = data.aws_vpc.vpc.id
   filter {
-    
-      name = "tag:Name"
-      values = ["cicd_sg"]
-    }
+    name   = "tag:Name"
+    values = ["cicd_sg"]
   }
+}
 
- #Creating EKS Cluster
-  resource "aws_eks_cluster" "eks" {
-    name     = "project-eks"
-    role_arn = aws_iam_role.master.arn
+# EKS Cluster Resource
+resource "aws_eks_cluster" "eks" {
+  name     = "project-eks"
+  role_arn = aws_iam_role.master.arn
 
-    vpc_config {
-      subnet_ids = [data.aws_subnet.public-subnet-01.id, data.aws_subnet.public-subnet-02.id]
-    }
-
-    tags = {
-      "Name" = "MyEKS"
-    }
-
-    depends_on = [
-      aws_iam_role_policy_attachment.AmazonEKSClusterPolicy,
-      aws_iam_role_policy_attachment.AmazonEKSServicePolicy,
-      aws_iam_role_policy_attachment.AmazonEKSVPCResourceController,
+  vpc_config {
+    subnet_ids = [
+      data.aws_subnet.public-subnet-01.id,
+      data.aws_subnet.public-subnet-02.id
     ]
   }
- resource "aws_eks_node_group" "node-grp" {
-    cluster_name    = aws_eks_cluster.eks.name
-    node_group_name = "dev-node-group"
-    node_role_arn   = aws_iam_role.worker.arn
-    subnet_ids      = [data.aws_subnet.public-subnet-01.id, data.aws_subnet.public-subnet-02.id]
-    capacity_type   = "ON_DEMAND"
-    disk_size       = 20
-    instance_types  = ["t2.small"]
 
-    remote_access {
-      ec2_ssh_key               = "devops-key"
-      source_security_group_ids = [data.aws_security_group.cicd_sg.id]
-    }
-
-    labels = {
-      env = "dev"
-    }
-
-    scaling_config {
-      desired_size = 2
-      max_size     = 4
-      min_size     = 1
-    }
-
-    update_config {
-      max_unavailable = 1
-    }
-
-    depends_on = [
-      aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
-      aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
-      aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
-    ]
+  tags = {
+    "Name" = "MyEKS"
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.AmazonEKSClusterPolicy,
+    aws_iam_role_policy_attachment.AmazonEKSServicePolicy,
+    aws_iam_role_policy_attachment.AmazonEKSVPCResourceController,
+  ]
+}
+
+# EKS Node Group Resource
+resource "aws_eks_node_group" "node-grp" {
+  cluster_name    = aws_eks_cluster.eks.name
+  node_group_name = "dev-node-group"
+  node_role_arn   = aws_iam_role.worker.arn
+  subnet_ids      = [
+    data.aws_subnet.public-subnet-01.id,
+    data.aws_subnet.public-subnet-02.id
+  ]
+  capacity_type   = "ON_DEMAND"
+  disk_size       = 20
+  instance_types  = ["t2.small"]
+
+  remote_access {
+    ec2_ssh_key               = "devops-key"
+    source_security_group_ids = [data.aws_security_group.cicd_sg.id]
+  }
+
+  labels = {
+    env = "dev"
+  }
+
+  scaling_config {
+    desired_size = 2
+    max_size     = 4
+    min_size     = 1
+  }
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
+  ]
+}
 
