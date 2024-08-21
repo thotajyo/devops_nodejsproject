@@ -1,6 +1,6 @@
 resource "aws_instance" "ec2" {
   ami                    = "ami-0ae8f15ae66fe8cda"
-  instance_type          = "t2.medium"
+  instance_type          = "t2.large"
   key_name               = "devops-key"
   subnet_id              = aws_subnet.public-subnet-01.id
   vpc_security_group_ids = [aws_security_group.cicd_sg.id]
