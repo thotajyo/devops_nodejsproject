@@ -7,7 +7,7 @@ resource "aws_instance" "ec2" {
   ## Attach IAM role to the EC2 instance 
   iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
   root_block_device {
-    volume_size = 8
+    volume_size = 30
   }
   user_data = templatefile("./install-tools.sh", {})
 
