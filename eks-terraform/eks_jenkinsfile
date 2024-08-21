@@ -6,7 +6,10 @@ pipeline {
     stages {
         stage('Checkout from Git'){
             steps{
-                echo 'git checkout'
+                checkout([$class: 'GitSCM', 
+                          branches: [[name: '*/main']],  // Or your branch
+                          userRemoteConfigs: [[url: 'https://github.com/thotajyo/devops_nodejsproject.git', 
+                                               credentialsId: 'Pat_jenkins']]])
             }
         }
         stage('Terraform version'){
