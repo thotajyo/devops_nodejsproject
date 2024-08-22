@@ -103,20 +103,17 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
   role       = aws_iam_role.worker.name
 }
 
-data "aws_vpc" "vpc" {
-  
-  # Add another filter to uniquely identify your VPC
-  filter {
-    name   = "cidr-block"
-    values = ["10.0.0.0/16"]  # Adjust this to match your VPC's CIDR block
+ # data source 
+ data "aws_vpc" "main" {
+  tags = {
+    Name = "Jumphost-vpc"  # Specify the name of your existing VPC
   }
 }
-
 
 data "aws_subnet" "public-subnet-01" {
   filter {
     name   = "tag:Name"
-    values = ["public-subnet1"]
+    values = ["public-subnet-02"]
   }
   vpc_id = data.aws_vpc.vpc.id
 }
@@ -124,7 +121,7 @@ data "aws_subnet" "public-subnet-01" {
 data "aws_subnet" "public-subnet-02" {
   filter {
     name   = "tag:Name"
-    values = ["public-subnet2"]
+    values = ["public-subnet-02"]
   }
   vpc_id = data.aws_vpc.vpc.id
 }
