@@ -51,12 +51,41 @@ resource "aws_iam_role" "worker" {
   })
 }
 
+# IAM Instance Profile
 resource "aws_iam_instance_profile" "worker" {
   depends_on = [aws_iam_role.worker]
   name       = "jyothi-eks-worker-profile"
   role       = aws_iam_role.worker.name
 }
 
+# Re-add autoscaler policy if required
+resource "aws_iam_policy" "autoscaler" {
+  name = "jyothi-eks-autoscaler-policy"
+  path = "/"
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances",
+          "autoscaling:DescribeTags",
+          "autoscaling:DescribeLaunchConfigurations",
+          "autoscaling:SetDesiredCapacity",
+          "autoscaling:TerminateInstanceInAutoScalingGroup",
+          "ec2:DescribeLaunchTemplateVersions"
+        ],
+        "Resource": "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "autoscaler" {
+  role       = aws_iam_role.worker.name
+  policy_arn = aws_iam_policy.autoscaler.arn
+}
 
 # Attach necessary policies to the worker node role
 resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
@@ -74,12 +103,15 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
   role       = aws_iam_role.worker.name
 }
 
-# data source 
- data "aws_vpc" "vpc" {
-  tags = {
-    Name = "vpc"  # Specify the name of your existing VPC
+data "aws_vpc" "vpc" {
+  
+  # Add another filter to uniquely identify your VPC
+  filter {
+    name   = "cidr-block"
+    values = ["10.0.0.0/16"]  # Adjust this to match your VPC's CIDR block
   }
 }
+
 
 data "aws_subnet" "public-subnet-01" {
   filter {
