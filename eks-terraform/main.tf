@@ -57,6 +57,38 @@ resource "aws_iam_instance_profile" "worker" {
   role       = aws_iam_role.worker.name
 }
 
+# data source 
+ data "aws_vpc" "vpc" {
+  tags = {
+    Name = "vpc"  # Specify the name of your existing VPC
+  }
+}
+
+data "aws_subnet" "public-subnet-01" {
+  filter {
+    name   = "tag:Name"
+    values = ["public-subnet1"]
+  }
+  vpc_id = data.aws_vpc.vpc.id
+}
+
+data "aws_subnet" "public-subnet-02" {
+  filter {
+    name   = "tag:Name"
+    values = ["public-subnet2"]
+  }
+  vpc_id = data.aws_vpc.vpc.id
+}
+
+data "aws_security_group" "cicd_sg" {
+  vpc_id = data.aws_vpc.vpc.id
+  filter {
+    
+      name = "tag:Name"
+      values = ["cicd_sg"]
+    }
+  }
+
 resource "aws_eks_cluster" "eks" {
   name     = "project-eks"
   role_arn = aws_iam_role.master.arn
