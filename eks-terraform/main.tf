@@ -106,14 +106,14 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
  # data source 
  data "aws_vpc" "main" {
   tags = {
-    Name = "Jumphost-vpc"  # Specify the name of your existing VPC
+    Name = "vpc-1"  # Specify the name of your existing VPC
   }
 }
 
 data "aws_subnet" "public-subnet-01" {
   filter {
     name   = "tag:Name"
-    values = ["public-subnet-02"]
+    values = ["public-subnet-01"]
   }
   vpc_id = data.aws_vpc.vpc.id
 }
