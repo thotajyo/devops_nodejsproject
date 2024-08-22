@@ -107,6 +107,7 @@ resource "aws_eks_cluster" "eks" {
   ]
 }
 
+
 resource "aws_eks_node_group" "node-grp" {
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = "dev-node-group"
@@ -127,12 +128,13 @@ resource "aws_eks_node_group" "node-grp" {
 
   remote_access {
     ec2_ssh_key               = "devops-key"
-    source_security_group_ids = [aws_security_group.cicd_sg.id]
+    source_security_group_ids = [data.aws_security_group.cicd_sg.id]
   }
 
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
-    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy
+    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly
   ]
 }
 
